@@ -581,3 +581,9 @@ function sendTestMail {
 		kommt die Mail an? Lasst uns testen!
 	MESSAGE_END
 }
+
+# installiert Dovecot
+function installDovecot {
+    checkUpdates
+    sudo apt install dovecot-core dovecot-imapd dovecot-ldap -y
+}
