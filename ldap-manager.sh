@@ -175,6 +175,12 @@ function setHostname {
     echo "Hostname ist: $Hostname"
 }
 
+# zeigt die IP Adressen der Maschine (VM/Server) an
+function showIpAddresses {
+    echo "IP Adressen:"
+    ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}'
+}
+
 # installiert die LDAP Server
 function installLDAP {
     checkUpdates
@@ -735,12 +741,14 @@ function installNextcloud {
 
     read -r -d '' notice_text <<- NOTICE_TEXT
 		************************************************************************************************
-		bitte besuchen Sie http://$Hostname/setup-nextcloud.php und folgen Sie den Anweisungen um Nextcloud zu installieren.
+		bitte besuchen Sie ein den folgenden Link um Nextcloud zu installieren:
+		$(showWithAllIpAddresses "http://IP_ADDRESS/setup-nextcloud.php")
 		************************************************************************************************
 		Benutzen Sie die folgenden MySQL Datenbank Daten:
 		Datenbank:                  $dbObjektName
 		Datenbank Benutzer:         $dbObjektName
 		Datenbank Passwort:         $dbObjektName
+		--------- Weitere Konfig Parameter ---------
 		Nextcloud Datenordner:      /home/nextcloud
 	NOTICE_TEXT
     echo "$notice_text"
@@ -767,12 +775,15 @@ function installRoundcube {
 
     read -r -d '' notice_text <<- NOTICE_TEXT
 		************************************************************************************************
-		bitte besuchen Sie http://$Hostname/roundcube/installer und folgen Sie den Anweisungen um Roundcube zu installieren.
+		bitte besuchen Sie ein den folgenden Link um Roundcube zu installieren:
+        $(showWithAllIpAddresses "http://IP_ADDRESS/roundcube/installer")
 		************************************************************************************************
 		Benutzen Sie die folgenden MySQL Datenbank Daten:
 		Datenbank:                  $dbObjektName
 		Datenbank Benutzer:         $dbObjektName
 		Datenbank Passwort:         $dbObjektName
+        --------- Weitere Konfig Parameter ---------
+
 	NOTICE_TEXT
     echo "$notice_text"
 }
@@ -836,6 +847,19 @@ function deactivateApacheLdapAuth {
     sudo a2ensite 000-default.conf
     sudo a2dismod authnz_ldap
     sudo systemctl restart apache2
+}
+
+# Liest alle IP Adressen aus und ersetzt IP_ADDRESS mit der IP Adresse in der übergebenen Zeichenkette
+# Parameter: $1 = Zeichenkette in der IP_ADDRESS ersetzt werden soll
+function showWithAllIpAddresses {
+    [ -z "$1" ] && return
+    local text="$1"
+    local preText="        ->"
+    #allIpAddresses=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+    echo "$preText ${text//IP_ADDRESS/$Hostname}"
+    while IFS= read -r line; do
+        echo "$preText ${text//IP_ADDRESS/$line}"
+    done <<< "$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}')"
 }
 
 function showAbout {
@@ -939,6 +963,7 @@ if [ "$EUID" -eq 0 ]; then
                 configureDovecot
                 installLampStack
                 installNextcloud
+                read -p "$EnterPromptMessage"
                 installRoundcube
                 read -p "$EnterPromptMessage"
                 ;;
@@ -950,6 +975,10 @@ if [ "$EUID" -eq 0 ]; then
             11)
                 echo -n "Aktuelle Hostname: "
                 echo $Hostname
+                read -p "$EnterPromptMessage"
+                ;;
+            12)
+                showIpAddresses
                 read -p "$EnterPromptMessage"
                 ;;
             20)
@@ -1055,6 +1084,7 @@ if [ "$EUID" -eq 0 ]; then
             90)
                 echo "Development..."
                 echo "nothing to do..."
+                showWithAllIpAddresses "hello-IP_ADDRESSmynameis-IP_ADDRESS"
                 read -p "$EnterPromptMessage"
                 ;;
             99)
