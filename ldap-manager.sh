@@ -401,6 +401,25 @@ function createMailUserInteractive {
     createMailUser "$mailUsername" "$mailPassword"
 }
 
+# erstellt Benutzer in LDAP Datenbank unter ou=Mail,dc=example,dc=com
+# Benutzerdaten werden aus CSV Datei eingelesen
+function importMailUsersFromCsv {
+    echo "Importiere Mail Benutzer aus CSV..."
+    echo "CSV-Format: [username,password]"
+    echo "----------------------------------"
+    echo "Bitte geben Sie den Pfad zur CSV Datei ein."
+    read -p "CSV Datei: " csvFile
+
+    if [ ! -f "$csvFile" ]; then
+        echo "Datei '$csvFile' existiert nicht, bitte gibb Komplett-Pfad."
+        return
+    fi
+
+    while IFS=, read -r username password; do
+        createMailUserInternal "$username" "$password"
+    done < "$csvFile"
+}
+
 # erstellt eine neue Gruppe in LDAP Datenbank unter ou=Mail,dc=example,dc=com
 function createMailGroup {
     if [ -z "$1" ]; then
