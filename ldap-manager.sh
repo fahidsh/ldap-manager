@@ -19,3 +19,7 @@ function readConfigValue() {
         touch "$CONFIG_FILE"
     fi
 }
+
+function saveConfigValue() {
+    [ -f "$CONFIG_FILE" ] && echo "$1=$2" >> "$CONFIG_FILE" || echo "$1=$2" > "$CONFIG_FILE"
+}
