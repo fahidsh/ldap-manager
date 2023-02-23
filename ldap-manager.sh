@@ -456,3 +456,79 @@ function installPostfix {
     checkUpdates
     sudo apt-get install postfix postfix-ldap -y
 }
+
+# stellt die allgemeine LDAP Konfig-Parameters für Postfix LDAP-Tabellen zur Verfügung
+function getpostfixCommons {
+    checkLdapDomain
+    read -r -d '' postfix_common <<- POSTFIX_COMMON
+		server_host = ldap://$Hostname
+		start_tls = no
+		version = 3
+		bind = yes
+		bind_dn = cn=mailAccountReader,ou=Manager,$LDAP_Prefix
+		bind_pw = mar
+		search_base = ou=Mail,$LDAP_Prefix
+		scope = sub
+	POSTFIX_COMMON
+    echo "$postfix_common"
+}
+
+# erstellt die LDAP Konfigurationstabellen für Postfix
+function generatePostfixLdapMaps {
+    local postfix_common=$(getpostfixCommons)
+    local basePath="/etc/postfix/ldap"
+    mkdir -p "$basePath"
+
+    read -r -d '' virtual_alias_domains <<- POSTFIX_VIRTUAL_ALIAS_DOMAINS
+		query_filter = mailacceptinggeneralid=*@%s
+		result_attribute = mailacceptinggeneralid
+		result_format = %d
+	POSTFIX_VIRTUAL_ALIAS_DOMAINS
+    echo "$postfix_common" > "$basePath/virtual_alias_domains"
+    echo "$virtual_alias_domains" >> "$basePath/virtual_alias_domains"
+
+    read -r -d '' virtual_alias_maps <<- POSTFIX_VIRTUAL_ALIAS_MAPS
+		query_filter = mailacceptinggeneralid=%s
+		result_attribute = maildrop
+	POSTFIX_VIRTUAL_ALIAS_MAPS
+    echo "$postfix_common" > "$basePath/virtual_alias_maps"
+    echo "$virtual_alias_maps" >> "$basePath/virtual_alias_maps"
+
+    read -r -d '' virtual_mailbox_maps <<- POSTFIX_VIRTUAL_MAILBOX_MAPS
+		query_filter = maildrop=%s
+		result_attribute = homeDirectory
+		result_format = %s/mailbox/
+	POSTFIX_VIRTUAL_MAILBOX_MAPS
+    echo "$postfix_common" > "$basePath/virtual_mailbox_maps"
+    echo "$virtual_mailbox_maps" >> "$basePath/virtual_mailbox_maps"
+
+    read -r -d '' virtual_uid_maps <<- POSTFIX_VIRTUAL_UID_MAPS
+		query_filter = maildrop=%s
+		result_attribute = uidNumber
+	POSTFIX_VIRTUAL_UID_MAPS
+    echo "$postfix_common" > "$basePath/virtual_uid_maps"
+    echo "$virtual_uid_maps" >> "$basePath/virtual_uid_maps"
+
+    read -r -d '' smtpd_sender_login_maps <<- POSTFIX_SMTPD_SENDER_LOGIN_MAPS
+		query_filter = (|(mailacceptinggeneralid=%s)(maildrop=%s))
+		result_attribute = uid
+	POSTFIX_SMTPD_SENDER_LOGIN_MAPS
+    echo "$postfix_common" > "$basePath/smtpd_sender_login_maps"
+    echo "$smtpd_sender_login_maps" >> "$basePath/smtpd_sender_login_maps"
+
+    sudo chown postfix:postfix /etc/postfix/ldap/*
+    sudo chmod 400 /etc/postfix/ldap/*
+
+    sudo systemctl restart postfix
+}
+
+# testet die LDAP Konfigurationstabellen für Postfix
+function testPostfixLdapTables {
+    checkLdapDomain
+    echo "Teste Postfix LDAP Tabellen..."
+    sudo postmap -q $LDAP_Domain ldap:/etc/postfix/ldap/virtual_alias_domains
+    sudo postmap -q test@$Hostname ldap:/etc/postfix/ldap/virtual_mailbox_maps
+    sudo postmap -q test@$Hostname ldap:/etc/postfix/ldap/virtual_uid_maps
+    sudo postmap -q test@$LDAP_Domain ldap:/etc/postfix/ldap/smtpd_sender_login_maps
+    sudo postmap -q test@$LDAP_Domain ldap:/etc/postfix/ldap/virtual_alias_maps
+}
