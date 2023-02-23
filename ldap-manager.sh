@@ -449,3 +449,10 @@ function createMailGroupInteractive {
     read -p "Gruppenname: " mailGroupName
     createMailGroup "$mailGroupName"
 }
+
+# installiert Postfix Mailserver
+function installPostfix {
+    echo "Installiere Postfix..."
+    checkUpdates
+    sudo apt-get install postfix postfix-ldap -y
+}
