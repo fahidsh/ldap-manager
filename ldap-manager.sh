@@ -131,3 +131,18 @@ function checkUpdates {
         isAptUpdate=true
     fi
 }
+
+# prüft ob die LDAP Domain oder LDAP Prefix leer ist
+# wenn ja, dann fragt es den Benutzer nach der LDAP Domain
+function checkLdapDomain {
+    while [ -z "$LDAP_Domain" ] || [ -z "$LDAP_Prefix" ]; do
+        read -p "Bitte geben Sie ihre LDAP-Domäne ein: " LDAP_Domain
+        if [ -z "$LDAP_Domain" ]; then
+            echo "LDAP Domäne darf nicht leer sein"
+        else
+            LDAP_Prefix=$(echo $LDAP_Domain | sed 's/\./,dc=/g' | sed 's/^/dc=/')
+            updateConfigValue "LDAP_Domain" $LDAP_Domain
+            updateConfigValue "LDAP_Prefix" $LDAP_Prefix
+        fi
+    done    
+}
