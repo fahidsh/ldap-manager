@@ -146,3 +146,23 @@ function checkLdapDomain {
         fi
     done    
 }
+
+
+<<COMMENT
+*******************************************
+    Funktionen 
+*******************************************
+COMMENT
+# setzt den Hostname der Maschine (VM/Server)
+# Benutzer wird nach dem Hostname gefragt
+# wenn der Hostname leer ist, dann wird der aktuelle Hostname verwendet
+function setHostname {
+    echo "Aktueller Hostname ist: $Hostname"
+    echo "Es ist empfohlen den Hostname als FQDN anzugeben. kann aber nur der Hostname sein."
+    read -p "Hostname z.B.[ldap.itschule.de oder ldapserver]: " hostname
+    # prüfe ob Hostname leer ist, wenn nicht setze Hostname
+    [ -z "$hostname" ] || (sudo hostnamectl set-hostname $hostname && echo "127.0.0.1 $hostname" >> /etc/hosts)
+    Hostname=$(hostname -f)
+    echo "Hostname ist: $Hostname"
+}
+
