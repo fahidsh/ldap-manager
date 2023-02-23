@@ -532,3 +532,36 @@ function testPostfixLdapTables {
     sudo postmap -q test@$LDAP_Domain ldap:/etc/postfix/ldap/smtpd_sender_login_maps
     sudo postmap -q test@$LDAP_Domain ldap:/etc/postfix/ldap/virtual_alias_maps
 }
+
+# erstellt die allgemein Konfiguration für Postfix, main.cf
+function configurePostfixMainCf {
+    read -r -d '' postfix_main <<- POSTFIX_MAIN
+		myhostname = $Hostname
+		smtpd_banner = $Hostname ESMTP (Ubuntu)
+		biff = no
+		append_dot_mydomain = no
+		mydestination = localhost.fahid.de, localhost
+		relayhost =
+		mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 10.0.0.0/8 192.168.0.0/16
+		mailbox_size_limit = 0
+		recipient_delimiter = +
+		inet_interfaces = all
+		smtpd_relay_restrictions = permit_mynetworks reject_unauth_destination
+		smtpd_recipient_restrictions = reject_sender_login_mismatch
+		virtual_alias_domains = ldap:/etc/postfix/ldap/virtual_alias_domains
+		virtual_mailbox_domains = $Hostname
+
+		virtual_alias_maps = ldap:/etc/postfix/ldap/virtual_alias_maps
+		virtual_mailbox_base = /
+		virtual_mailbox_maps = ldap:/etc/postfix/ldap/virtual_mailbox_maps
+		virtual_uid_maps = ldap:/etc/postfix/ldap/virtual_uid_maps
+		virtual_gid_maps = ldap:/etc/postfix/ldap/virtual_uid_maps
+
+		smtpd_sender_login_maps = ldap:/etc/postfix/ldap/smtpd_sender_login_maps
+	POSTFIX_MAIN
+
+    sudo mv /etc/postfix/main.cf /etc/postfix/main.cf.bak
+    sudo echo "$postfix_main" > /etc/postfix/main.cf
+    sudo mkdir -p /home/mail
+    sudo chmod o+w /home/mail
+}
