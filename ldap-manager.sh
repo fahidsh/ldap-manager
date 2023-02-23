@@ -5,11 +5,15 @@
     lesen und schreiben von config Datei
 *******************************************
 COMMENT
-
+# Pfad des Skripts
 scriptPath=$(dirname "$0")
+# Pfad der config Datei
 CONFIG_FILE="$scriptPath/config"
 
+# Lese den Wert einer Konfigurationsvariable aus der config Datei
+# Parameter: $1 = Name der Konfigurationsvariable
 function readConfigValue() {
+    [ -z "$1" ] && echo "" && return    
     if [ -f "$CONFIG_FILE" ]; then
         local key="$1"
         local value=$(grep "^$key=" "$CONFIG_FILE" | cut -d "=" -f 2)
@@ -20,6 +24,11 @@ function readConfigValue() {
     fi
 }
 
+# Lese den Wert einer Konfigurationsvariable aus der config Datei
+# wenn der Wert leer ist, dann den Benutzer nach dem Wert fragen
+# Parameter: $1 = Name der Konfigurationsvariable
+# optional   $2 = Text der angezeigt wird, wenn der Benutzer nach dem Wert gefragt wird
+# optional   $3 = true/false, wenn true, dann wird der Wert nicht angezeigt
 function readConfigOrAsk() {
     local key="$1"
     local value=$(readConfigValue "$key")
@@ -36,11 +45,24 @@ function readConfigOrAsk() {
     echo "$value"
 }
 
+# Speichert einen Wert in der config Datei
+# if der Wert schon existiert, dann wird er überschrieben
+# Parameter: $1 = Name der Konfigurationsvariable
+#            $2 = Wert der Konfigurationsvariable
 function saveConfigValue() {
+    [ -z "$1" ] && return
+    [ -z "$2" ] && return
+    local val=$(readConfigValue "$1")
+    [ -n "$val" ] && updateConfigValue "$1" "$2"
     [ -f "$CONFIG_FILE" ] && echo "$1=$2" >> "$CONFIG_FILE" || echo "$1=$2" > "$CONFIG_FILE"
 }
 
+# Aktualisiert der Wert einer Konfigurationsvariable in der config Datei
+# Parameter: $1 = Name der Konfigurationsvariable
+#            $2 = Wert der Konfigurationsvariable
 function updateConfigValue() {
+    [ -z "$1" ] && return
+    [ -z "$2" ] && return
     local key="$1"
     local value="$2"
     if [ -f "$CONFIG_FILE" ]; then
