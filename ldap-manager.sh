@@ -736,3 +736,34 @@ function installNextcloud {
 	NOTICE_TEXT
     echo "$notice_text"
 }
+
+# installiert Roundcube
+function installRoundcube {
+    VER=1.5.2
+    sudo wget -4 https://github.com/roundcube/roundcubemail/releases/download/$VER/roundcubemail-$VER-complete.tar.gz
+    sudo mkdir /var/www/html/roundcube
+    sudo tar xzf roundcubemail-$VER-complete.tar.gz -C /var/www/html/roundcube --strip-components 1
+    sudo chown -R www-data:www-data /var/www/html/roundcube
+    sudo chmod -R 755 /var/www/html/roundcube
+
+    # erstelle Datenbank und Benutzer für Nextcloud
+    local MYSQL_Root_Pass_Local=$(readConfigOrAsk "MYSQL_Root_Pass" "Bitte geben Sie MYSQL_Root_Pass Passwort ein: " true)
+    local dbObjektName="roundcube"
+    sudo mysql -uroot -p$MYSQL_Root_Pass_Local -e "CREATE DATABASE $dbObjektName /*\!40100 DEFAULT CHARACTER SET utf8 */;"
+    sudo mysql -uroot -p$MYSQL_Root_Pass_Local -e "CREATE USER $dbObjektName@localhost IDENTIFIED BY '$dbObjektName';"
+    sudo mysql -uroot -p$MYSQL_Root_Pass_Local -e "GRANT ALL PRIVILEGES ON $dbObjektName.* TO '$dbObjektName'@'localhost';"
+    sudo mysql -uroot -p$MYSQL_Root_Pass_Local -e "FLUSH PRIVILEGES;"
+    sudo mysql -u$dbObjektName -p$dbObjektName $dbObjektName < /var/www/html/roundcube/SQL/mysql.initial.sql
+    sudo systemctl restart apache2
+
+    read -r -d '' notice_text <<- NOTICE_TEXT
+		************************************************************************************************
+		bitte besuchen Sie http://$Hostname/roundcube/installer und folgen Sie den Anweisungen um Roundcube zu installieren.
+		************************************************************************************************
+		Benutzen Sie die folgenden MySQL Datenbank Daten:
+		Datenbank:                  $dbObjektName
+		Datenbank Benutzer:         $dbObjektName
+		Datenbank Passwort:         $dbObjektName
+	NOTICE_TEXT
+    echo "$notice_text"
+}
