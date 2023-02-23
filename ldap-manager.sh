@@ -587,3 +587,90 @@ function installDovecot {
     checkUpdates
     sudo apt install dovecot-core dovecot-imapd dovecot-ldap -y
 }
+
+# konfiguriert Dovecot
+function configureDovecot {
+    checkLdapDomain
+    read -r -d '' mail_conf <<- MAIL_CONF
+		#protocols = imap
+		mail_location = maildir:~/mailbox
+		namespace inbox {
+		    inbox = yes
+		}
+		mail_privileged_group = mail
+
+		protocol !indexer-worker {
+		}    
+	MAIL_CONF
+    sudo mv /etc/dovecot/conf.d/10-mail.conf /etc/dovecot/conf.d/10-mail.conf.bak
+    sudo echo "$mail_conf" > /etc/dovecot/conf.d/10-mail.conf
+
+    read -r -d '' master_conf <<- MASTER_CONF
+		service imap-login {
+		  inet_listener imap {
+		    port = 143
+		  }
+		  inet_listener imaps {
+		    #port = 993
+		    #ssl = yes
+		  }
+		  service_count = 1
+		  process_min_avail = 1
+		}
+
+		service pop3-login {
+		  inet_listener pop3 {
+		    port = 110
+		  }
+		  inet_listener pop3s {
+		    #port = 995
+		    #ssl = yes
+		  }
+		}
+	MASTER_CONF
+    sudo mv /etc/dovecot/conf.d/10-master.conf /etc/dovecot/conf.d/10-master.conf.bak
+    sudo echo "$master_conf" > /etc/dovecot/conf.d/10-master.conf
+
+    read -r -d '' auth_conf <<- AUTH_CONF
+		auth_mechanisms = plain login
+		disable_plaintext_auth = no
+		!include auth-system.conf.ext
+		!include auth-ldap.conf.ext
+	AUTH_CONF
+    sudo mv /etc/dovecot/conf.d/10-auth.conf /etc/dovecot/conf.d/10-auth.conf.bak
+    sudo echo "$auth_conf" > /etc/dovecot/conf.d/10-auth.conf
+
+    read -r -d '' auth_ldap_conf <<- AUTH_LDAP_CONF
+		passdb {
+		  driver = ldap
+		  args = /etc/dovecot/dovecot-ldap.conf.ext
+		}
+		userdb {
+		  driver = ldap
+		  args = /etc/dovecot/dovecot-ldap.conf.ext
+		}
+	AUTH_LDAP_CONF
+    sudo mv /etc/dovecot/conf.d/auth-ldap.conf.ext /etc/dovecot/conf.d/auth-ldap.conf.ext.bak
+    sudo echo "$auth_ldap_conf" > /etc/dovecot/conf.d/auth-ldap.conf.ext
+
+    read -r -d '' dovecot_ldap_conf <<- DOVECOT_LDAP_CONF
+		uris = ldap://$Hostname
+		dn = cn=mailAccountReader,ou=Manager,$LDAP_Prefix
+		dnpass = mar
+		#tls = yes
+		#tls_ca_cert_file = /etc/ldap/tls/CA.pem
+		#tls_require_cert = hard
+		debug_level = 0
+		auth_bind = yes
+		auth_bind_userdn = uid=%u,ou=Mail,$LDAP_Prefix
+		ldap_version = 3
+		base = ou=Mail,$LDAP_Prefix
+		scope = subtree
+		user_attrs = homeDirectory=home,uidNumber=uid,gidNumber=gid
+		user_filter = (&(objectClass=posixAccount)(uid=%u))
+	DOVECOT_LDAP_CONF
+    sudo mv /etc/dovecot/dovecot-ldap.conf.ext /etc/dovecot/dovecot-ldap.conf.ext.bak
+    sudo echo "$dovecot_ldap_conf" > /etc/dovecot/dovecot-ldap.conf.ext
+
+    systemctl restart dovecot
+}
