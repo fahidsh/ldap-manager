@@ -330,3 +330,25 @@ function addMailAccountReader {
     ldapadd -D "cn=admin,$LDAP_Prefix" -w $LDAP_Admin_Pass_Local -H ldap:// -f "mailAccountReader.ldif"
     [ $? -eq 0 ] && rm mailAccountReader.ldif
 }
+
+# erstellt ACL für mailAccountReader
+# erlaubt dem Benutzer "mailAccountReader" alle LDAP Objekte (ohne Passwört) unter ou=Mail,dc=example,dc=com lesen
+function addMailAccountReaderACL {
+    checkLdapDomain
+    read -r -d '' mailAccountReaderACL <<- MAILACCOUNTREADER_ACL
+		dn: olcDatabase={1}mdb,cn=config
+		changetype: modify
+		add: olcAccess
+		olcAccess: {0}to attrs=userPassword
+		  by self =xw
+		  by anonymous auth
+		  by * none
+		olcAccess: {1}to dn.subtree="ou=Mail,$LDAP_Prefix"
+		  by dn.base="cn=mailAccountReader,ou=Manager,$LDAP_Prefix" read
+		  by * none
+	MAILACCOUNTREADER_ACL
+    echo "$mailAccountReaderACL" > mailAccountReaderACL.ldif
+    local LDAP_Config_Pass_Local=$(readConfigOrAsk "LDAP_Config_Pass" "Bitte geben Sie LDAP Config Passwort ein: " true)
+    ldapadd -D cn=admin,cn=config -w $LDAP_Config_Pass_Local -H ldap:// -f mailAccountReaderACL.ldif
+    [ $? -eq 0 ] && rm mailAccountReaderACL.ldif
+}
