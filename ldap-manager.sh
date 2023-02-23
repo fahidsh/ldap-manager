@@ -122,3 +122,12 @@ function getNextUid {
     echo "$LDAP_uid_local"
 }
 
+# prüft ob apt update schon in der aktuellen Skript-Session ausgeführt worden ist
+# wenn nicht, dann führt es aus
+function checkUpdates {
+    if [ "$isAptUpdate" = false ]; then
+        sudo apt update
+        #sudo apt upgrade -y
+        isAptUpdate=true
+    fi
+}
