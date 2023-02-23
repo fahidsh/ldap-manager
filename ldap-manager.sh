@@ -246,3 +246,27 @@ function resetConfigPassword {
     # prüfe ob LDAP Dienst läuft
     #sudo systemctl status slapd
 }
+
+# erstellt neue Top-Level Organisational Unit (OU) in LDAP Datenbank
+# Parameter $1: Name der OU
+# Optional  $2: Beschreibung der OU
+function createOU {
+    [ -z "$1" ] && return
+    checkLdapDomain
+    echo "dn: ou=$1,$LDAP_Prefix" > ou.ldif
+    echo "objectClass: organizationalUnit" >> ou.ldif
+    echo "objectClass: top" >> ou.ldif
+    echo "ou: $1" >> ou.ldif
+    [ -z "$2" ] || echo "description: $2" >> ou.ldif
+    local LDAP_Admin_Pass_Local=$(readConfigOrAsk "LDAP_Admin_Pass" "Bitte geben Sie LDAP Admin Passwort ein: " true)
+    ldapadd -D "cn=admin,$LDAP_Prefix" -w $LDAP_Admin_Pass_Local -H ldap:// -f "ou.ldif"
+    [ $? -eq 0 ] && rm ou.ldif
+}
+
+# erstellt neue Organisational Unit (OU) in LDAP Datenbank
+# Benutzer wird nach dem Namen und Beschreibung der OU gefragt
+function createOuInteractive {
+    read -p "Name der OU: " ouName
+    read -p "Beschreibung der OU: " ouDescription
+    createOU "$ouName" "$ouDescription"
+}
