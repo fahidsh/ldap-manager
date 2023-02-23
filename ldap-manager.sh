@@ -194,3 +194,55 @@ function getMatchingPassword {
     echo
     #echo "$password"
 }
+
+# setzt das Passwort für den LDAP Config cn=admin,cn=config
+# Benutzer wird nach dem neuen Passwort gefragt
+# Es wird ein Backup der LDAP Konfiguration und Daten erstellt
+# das neue Passwort wird in die LDAP Konfiguration Backup Datei hinzugefügt
+# die LDAP Konfiguration und Daten werden mit dem neuen Passwort wiederhergestellt
+function resetConfigPassword {
+    # Benuzer nach dem neuen Passwort fragen
+    getMatchingPassword "Bitte geben Sie neue Passwort für cn=admin,cn=config ein"
+    # neues Passwort in die config Datei schreiben
+    updateConfigValue "LDAP_Config_Pass" "$password"
+    # passwort hash erzeugen
+    passwordHash=$(slappasswd -s $password)
+    # aktuelle Zeit ermitteln
+    timestamp=$(date +%Y%m%d%H%M%S)
+    # backup ordner festlegen und erstellen
+    backupDir="/var/backup/ldap_backup_$timestamp"
+    sudo mkdir -p "$backupDir"
+    # LDAP Konfiguration in einer Datei sichern
+    sudo slapcat -n 0 -l "$backupDir/config.ldif"
+    # LDAP Daten sichern
+    sudo slapcat -n 1 -l "$backupDir/data.ldif"
+    # Neue Passwort in die LDAP Konfiguration Sicherung hinzufügen und in eine neue Datei schreiben
+    if grep -q "olcRootDN: cn=admin,cn=config" "$backupDir/config.ldif"; then
+        sudo sed "/olcRootDN: cn=admin,cn=config/a olcRootPW: $passwordHash" "$backupDir/config.ldif" > "$backupDir/new-config.ldif"
+    else
+        sudo sed "/olcDatabase: {0}config/a olcRootDN: cn=admin,cn=config\nolcRootPW: $passwordHash" "$backupDir/config.ldif" > "$backupDir/new-config.ldif"
+    fi
+    # LDAP Dienst stoppen
+    sudo pkill slapd
+    # sicher die aktuelle LDAP Konfiguration in der Backup Ordner
+    sudo mkdir -p "$backupDir/slapd.d"
+    sudo cp -r /etc/ldap/slapd.d "$backupDir/slapd.d"
+    # aktuelle LDAP konfiguration löschen
+    sudo rm -rf /etc/ldap/slapd.d/*
+    # sicher die aktuelle LDAP Datenbank in der Backup Ordner
+    sudo mkdir -p "$backupDir/slapd"
+    sudo cp -r /var/lib/ldap "$backupDir/slapd"
+    # aktuelle LDAP Datenbank löschen
+    sudo rm -rf /var/lib/ldap/*
+    # die Sicherung von LDAP Konfiguration mit dem neuen Passwort importieren
+    sudo slapadd -n 0 -F /etc/ldap/slapd.d -l "$backupDir/new-config.ldif"
+    # die Sicherung von LDAP Daten importieren
+    sudo slapadd -n 1 -F /etc/ldap/slapd.d -l "$backupDir/data.ldif"
+    # Inhaber der LDAP Konfiguration und Datenbank auf openldap ändern
+    sudo chown -R openldap:openldap /etc/ldap/slapd.d
+    sudo chown -R openldap:openldap /var/lib/ldap
+    # LDAP Dienst starten
+    sudo systemctl start slapd
+    # prüfe ob LDAP Dienst läuft
+    #sudo systemctl status slapd
+}
