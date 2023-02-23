@@ -1,5 +1,14 @@
 #!/bin/bash
 
+ScriptVersion="1.0.0"
+ScriptAuthor="Fahid Shehzad"
+ScriptAuthorURL="https://github.com/fahidsh"
+ScriptDate="2020-02-23"
+ScriptLastUpdate="2023-02-23"
+ScriptName="ldap-manager.sh"
+ScriptLicense="MIT"
+ScriptInterfaceLanguage="Deutsch"
+
 <<COMMENT
 *******************************************
     lesen und schreiben von config Datei
@@ -829,6 +838,27 @@ function deactivateApacheLdapAuth {
     sudo systemctl restart apache2
 }
 
+function showAbout {
+    read -r -d '' about_text <<- ABOUT_TEXT
+		*******************************************
+		************    About    ******************
+		*******************************************
+		Skript Name:            $0
+		Skript Version:         $ScriptVersion
+		Skript Author:          $ScriptAuthor ( $ScriptAuthorURL )
+		Skript Lizenz:          $ScriptLicense
+		Oberfläche Sprache:     $ScriptLanguage
+		Skript Datum:           $ScriptDate
+		Skript Letzte Änderung: $ScriptLastChange
+		*******************************************
+		Referenzen:
+		  - https://www.vennedey.net/resources/2-LDAP-managed-mail-server-with-Postfix-and-Dovecot-for-multiple-domains
+		  - https://medium.com/@uri.tau/apache-and-ldap-cc7bff1f629d
+		  - https://stackoverflow.com/
+
+	ABOUT_TEXT
+    echo "$about_text"
+}
 
 <<COMMENT
 *******************************************
@@ -864,6 +894,10 @@ function displayMenu {
 		61) LAMP-Stack installieren
 		62) Nextcloud installieren
 		63) Roundcube installieren
+		68) Apache LDAP Authentifizierung aktivieren
+		69) Apache LDAP Authentifizierung deaktivieren
+		-----------------------------------------------------
+		99) Über
 		-----------------------------------------------------
 		X)  Exit
 		-----------------------------------------------------
@@ -888,7 +922,7 @@ if [ "$EUID" -eq 0 ]; then
                 installLDAP
                 configureLDAP
                 resetConfigPassword
-                addPostfixIndexes
+                addPostfixSchema
                 # erstelle OU für Mail
                 createOU "Mail"
                 # erstelle OU für Manager
@@ -1021,6 +1055,10 @@ if [ "$EUID" -eq 0 ]; then
             90)
                 echo "Development..."
                 echo "nothing to do..."
+                read -p "$EnterPromptMessage"
+                ;;
+            99)
+                showAbout
                 read -p "$EnterPromptMessage"
                 ;;
 
