@@ -828,3 +828,217 @@ function deactivateApacheLdapAuth {
     sudo a2dismod authnz_ldap
     sudo systemctl restart apache2
 }
+
+
+<<COMMENT
+*******************************************
+    Menü
+*******************************************
+COMMENT
+function displayMenu {
+    read -r -d '' menu_text <<- MENU_TEXT
+		-----------------------------------------------------
+		1)  Installiere LDAP, Postfix, Dovecot und Web Server
+		-----------------------------------------------------
+		10) Hostname setzen
+		11) Aktuelle Hostname auslesen
+		12) IP Adresseen auslesen
+		-----------------------------------------------------
+		20) LDAP installieren und konfigurieren
+		21) LDAP installieren
+		22) LDAP konfigurieren
+		23) LDAP Config Passwort [cn=admin,cn=config] zurücksetzen
+		24) Erstelle OU
+		25) Erstelle E-Mail Benutzer
+		26) E-Mail Benutzer von CSV Datei importieren
+		-----------------------------------------------------
+		41) Postfix installieren und konfigurieren
+		41) Postfix installieren
+		42) Postfix konfigurieren
+		-----------------------------------------------------
+		50) Dovecot installieren und konfigurieren
+		51) Dovecot installieren
+		52) Dovecot konfigurieren
+		-----------------------------------------------------
+		60) LAMP-Stack mit Nextcloud und Roundcube installieren
+		61) LAMP-Stack installieren
+		62) Nextcloud installieren
+		63) Roundcube installieren
+		-----------------------------------------------------
+		X)  Exit
+		-----------------------------------------------------
+	MENU_TEXT
+    echo "$menu_text"
+    read -p "Bitte wählen Sie einen Option: " option
+    echo
+}
+
+EnterPromptMessage="Drücke die Eingabe Taste um fortzufahren..."
+if [ "$EUID" -eq 0 ]; then
+    # menu anzeigen bis X gewählt wird
+    while [ "$option" != "X" ]; do
+        displayMenu
+        case $option in
+            1)
+                echo "Auf dieser Server wird LDAP, Postfix, Dovecot und Web Server installiert/konfiguriert."
+                echo "Bitte geben Sie die benötigten Daten ein."
+                echo "Falls Sie abbrechen wollen drücken Sie STRG+C"
+                read -p "$EnterPromptMessage"
+                setHostname
+                installLDAP
+                configureLDAP
+                resetConfigPassword
+                addPostfixIndexes
+                # erstelle OU für Mail
+                createOU "Mail"
+                # erstelle OU für Manager
+                createOU "Manager"
+                createMailUser "test" "test"
+                createMailGroup "Test Group"
+                addMailAccountReader
+                addMailAccountReaderACL
+                addPostfixIndexes
+                installPostfix
+                generatePostfixLdapMaps
+                configurePostfixMainCf
+                installDovecot
+                configureDovecot
+                installLampStack
+                installNextcloud
+                installRoundcube
+                read -p "$EnterPromptMessage"
+                ;;
+            10)
+                echo "Setze Hostname..."
+                setHostname
+                read -p "$EnterPromptMessage"
+                ;;
+            11)
+                echo -n "Aktuelle Hostname: "
+                echo $Hostname
+                read -p "$EnterPromptMessage"
+                ;;
+            20)
+                installLDAP
+                configureLDAP
+                resetConfigPassword
+                read -p "$EnterPromptMessage"
+                ;;
+            21)
+                installLDAP
+                read -p "$EnterPromptMessage"
+                ;;
+            22)
+                configureLDAP
+                read -p "$EnterPromptMessage"
+                ;;
+            23)
+                resetConfigPassword
+                read -p "$EnterPromptMessage"
+                ;;
+            24)
+                createOuInteractive
+                read -p "$EnterPromptMessage"
+                ;;
+            25)
+                createMailUserInteractive
+                read -p "$EnterPromptMessage"
+                ;;
+            26)
+                importMailUsersFromCsv
+                read -p "$EnterPromptMessage"
+                ;;
+            30)
+                addPostfixSchema
+                # erstelle OU für Mail
+                createOU "Mail"
+                # erstelle OU für Manager
+                createOU "Manager"
+                createMailUser "test" "test"
+                createMailGroup "Test Group"
+                addMailAccountReader
+                addMailAccountReaderACL
+                addPostfixIndexes
+                read -p "$EnterPromptMessage"
+                ;;
+            40)
+                installPostfix
+                generatePostfixLdapMaps
+                configurePostfixMainCf
+                read -p "$EnterPromptMessage"
+                ;;
+            41)
+                installPostfix
+                read -p "$EnterPromptMessage"
+                ;;
+            42)
+                generatePostfixLdapMaps
+                configurePostfixMainCf
+                read -p "$EnterPromptMessage"
+                ;;
+            50)
+                installDovecot
+                configureDovecot
+                read -p "$EnterPromptMessage"
+                ;;
+            51)
+                installDovecot
+                read -p "$EnterPromptMessage"
+                ;;
+            52)
+                configureDovecot
+                read -p "$EnterPromptMessage"
+                ;;
+            60)
+                installLampStack
+                installNextcloud
+                installRoundcube
+                read -p "$EnterPromptMessage"
+                ;;
+            61)
+                installLampStack
+                read -p "$EnterPromptMessage"
+                ;;
+            62)
+                installNextcloud
+                read -p "$EnterPromptMessage"
+                ;;
+            63)
+                installRoundcube
+                read -p "$EnterPromptMessage"
+                ;;
+            68)
+                echo "Apache LDAP Auth Aktiviert"
+                echo "http://$Hostname/authenticated"
+                setApacheLdapAuth
+                read -p "$EnterPromptMessage"
+                ;;
+            69)
+                echo "Apache LDAP Auth Deaktiviert"
+                deactivateApacheLdapAuth
+                read -p "$EnterPromptMessage"
+                ;;
+            90)
+                echo "Development..."
+                echo "nothing to do..."
+                read -p "$EnterPromptMessage"
+                ;;
+
+            X | x)
+                echo "Beende..."
+                echo "--------------------"
+                echo "Bitte schauen Sie die Datei: $CONFIG_FILE"
+                echo "es können wichtige Passwörter gespeichert sein."
+                echo "löschen Sie die Zeilen mit Passwörtern wenn Sie diese nicht mehr benötigen."
+                echo "--------------------"
+                option="X"
+                ;;
+            *)
+                echo "Ungültige Eingabe!: $option"
+                read -p "$EnterPromptMessage"
+                ;;
+        esac
+    done
+else
+    echo "Bitte führen Sie das Script als root aus."
+fi
