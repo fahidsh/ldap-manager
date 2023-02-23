@@ -20,6 +20,22 @@ function readConfigValue() {
     fi
 }
 
+function readConfigOrAsk() {
+    local key="$1"
+    local value=$(readConfigValue "$key")
+    if [ -z "$value" ]; then
+        local prmpt="Bitte geben Sie einen Wert für $key ein:"
+        [ -n "$2" ] && prmpt="$2"
+        if [ -n "$3" ] && [ "$3" = true ]; then
+            read -sp "$prmpt" value
+        else
+            read -p "$prmpt" value
+        fi
+        saveConfigValue "$key" "$value"
+    fi
+    echo "$value"
+}
+
 function saveConfigValue() {
     [ -f "$CONFIG_FILE" ] && echo "$1=$2" >> "$CONFIG_FILE" || echo "$1=$2" > "$CONFIG_FILE"
 }
@@ -34,3 +50,5 @@ function updateConfigValue() {
         echo "$key=$value" > "$CONFIG_FILE"
     fi
 }
+
+
