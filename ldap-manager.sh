@@ -565,3 +565,19 @@ function configurePostfixMainCf {
     sudo mkdir -p /home/mail
     sudo chmod o+w /home/mail
 }
+
+function sendTestMail {
+    read -p "Sender: " sender
+    read -p "Recipient: " recipient
+    # read -p "Subject: " subject
+    subject="Testmail"
+
+    /usr/sbin/sendmail -v -i -t <<- MESSAGE_END
+		From: $sender
+		To: $recipient
+		Subject: $subject
+
+		Hola amigo, que pasa contigo? 
+		kommt die Mail an? Lasst uns testen!
+	MESSAGE_END
+}
