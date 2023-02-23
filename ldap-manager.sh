@@ -270,3 +270,28 @@ function createOuInteractive {
     read -p "Beschreibung der OU: " ouDescription
     createOU "$ouName" "$ouDescription"
 }
+
+# erstellt Postfix LDAP Schema
+# https://www.postfix.org/LDAP_README.html#schema
+# https://raw.githubusercontent.com/68b32/postfix-ldap-schema/master/postfix.ldif
+function addPostfixSchema {
+    read -r -d '' postfix_ldif <<- POSTFIX_LDIF
+		dn: cn=postfix,cn=schema,cn=config
+		cn: postfix
+		objectclass: olcSchemaConfig
+		olcattributetypes: {0}(1.3.6.1.4.1.4203.666.1.200 NAME 'mailacceptinggeneral
+		 id' DESC 'Postfix mail local address alias attribute' EQUALITY caseIgnoreMa
+		 tch SUBSTR caseIgnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{1
+		 024})
+		olcattributetypes: {1}(1.3.6.1.4.1.4203.666.1.201 NAME 'maildrop' DESC 'Post
+		 fix mail final destination attribute' EQUALITY caseIgnoreMatch SUBSTR caseI
+		 gnoreSubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{1024})
+		olcobjectclasses: {0}(1.3.6.1.4.1.4203.666.1.100 NAME 'postfixUser' DESC 'Po
+		 stfix mail user class' SUP top AUXILIARY MAY(mailacceptinggeneralid $ maild
+		 rop))
+	POSTFIX_LDIF
+    echo "$postfix_ldif" > postfix.ldif
+    local LDAP_Config_Pass_Local=$(readConfigOrAsk "LDAP_Config_Pass" "Bitte geben Sie LDAP Config Passwort ein: " true)
+    ldapadd -D cn=admin,cn=config -w $LDAP_Config_Pass_Local -H ldap:// -f "postfix.ldif"
+    [ $? -eq 0 ] && rm postfix.ldif
+}
