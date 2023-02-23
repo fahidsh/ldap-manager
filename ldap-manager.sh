@@ -311,4 +311,22 @@ function addPostfixIndexes {
     [ $? -eq 0 ] && rm postfix_indexes.ldif
 }
 
-
+# erstellt einen neuen Benutzer in LDAP Datenbank mit dem Namen "mailAccountReader"
+# diser Benutzer kann alle LDAP Objekte (ohne Passwört) unter ou=Mail,dc=example,dc=com lesen
+# es wird für LDAP Bind in Postfix (und weiteren) benötigt
+function addMailAccountReader {
+    checkLdapDomain
+    local passwordHash=$(slappasswd -s "mar")
+    read -r -d '' mailAccountReader <<- MAILACCOUNTREADER
+		dn: cn=mailAccountReader,ou=Manager,$LDAP_Prefix
+		objectClass: organizationalRole
+		objectClass: simpleSecurityObject
+		objectClass: top
+		cn: mailAccountReader
+		userPassword: $passwordHash
+	MAILACCOUNTREADER
+    echo "$mailAccountReader" > mailAccountReader.ldif
+    local LDAP_Admin_Pass_Local=$(readConfigOrAsk "LDAP_Admin_Pass" "Bitte geben Sie LDAP Admin Passwort ein: " true)
+    ldapadd -D "cn=admin,$LDAP_Prefix" -w $LDAP_Admin_Pass_Local -H ldap:// -f "mailAccountReader.ldif"
+    [ $? -eq 0 ] && rm mailAccountReader.ldif
+}
