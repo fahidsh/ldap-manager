@@ -401,3 +401,32 @@ function createMailUserInteractive {
     createMailUser "$mailUsername" "$mailPassword"
 }
 
+# erstellt eine neue Gruppe in LDAP Datenbank unter ou=Mail,dc=example,dc=com
+function createMailGroup {
+    if [ -z "$1" ]; then
+        return
+    else
+        local groupName="$1"
+    fi
+    checkLdapDomain
+
+    read -r -d '' mail_group <<- MAIL_GROUP
+		dn: cn=$groupName,ou=Mail,$LDAP_Prefix
+		objectClass: groupOfUniqueNames
+		objectClass: top
+		cn: $groupName
+		uniqueMember: uid=test,ou=Mail,$LDAP_Prefix
+	MAIL_GROUP
+    echo "$mail_group" > mail_group.ldif
+    local LDAP_Admin_Pass_Local=$(readConfigOrAsk "LDAP_Admin_Pass" "Bitte geben Sie LDAP Admin Passwort ein: " true)
+    ldapadd -D "cn=admin,$LDAP_Prefix" -w $LDAP_Admin_Pass_Local -H ldap:// -f "mail_group.ldif"
+    [ $? -eq 0 ] && rm mail_group.ldif
+}
+
+# erstellt eine neue Gruppe in LDAP Datenbank unter ou=Mail,dc=example,dc=com
+# Gruppenname wird über die Konsole eingegeben
+function createMailGroupInteractive {
+    echo "Neue Mail Gruppe erstellen..."
+    read -p "Gruppenname: " mailGroupName
+    createMailGroup "$mailGroupName"
+}
