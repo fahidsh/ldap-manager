@@ -352,3 +352,52 @@ function addMailAccountReaderACL {
     ldapadd -D cn=admin,cn=config -w $LDAP_Config_Pass_Local -H ldap:// -f mailAccountReaderACL.ldif
     [ $? -eq 0 ] && rm mailAccountReaderACL.ldif
 }
+
+# erstellt einen neuen Benutzer in LDAP Datenbank unter ou=Mail,dc=example,dc=com
+# Benutzername und Passwort werden als Parameter übergeben
+# Parameter: $1 = Benutzername
+# Parameter: $2 = Passwort
+function createMailUser {
+    if [ -z "$1" ] || [ -z "$2" ]; then
+        return 1
+    else
+        local username="$1"
+        local password="$2"
+    fi
+
+    checkLdapDomain
+    local passwordHash=$(slappasswd -s "$password")
+    local cuid=$(getNextUid)
+    local emailAddress="$username@$LDAP_Domain"
+    local mailDropAddress="$username@$Hostname"
+
+    read -r -d '' mail_user <<- MAIL_USER
+		dn: uid=$username,ou=Mail,$LDAP_Prefix
+		cn: $username
+		gidnumber: $cuid
+		homedirectory: /home/mail/$username
+		mailacceptinggeneralid: $emailAddress
+		maildrop: $mailDropAddress
+		objectclass: account
+		objectclass: posixAccount
+		objectclass: postfixUser
+		objectclass: top
+		uid: $username
+		uidnumber: $cuid
+		userpassword: $passwordHash
+	MAIL_USER
+    echo "$mail_user" > mail_user.ldif
+    local LDAP_Admin_Pass_Local=$(readConfigOrAsk "LDAP_Admin_Pass" "Bitte geben Sie LDAP Admin Passwort ein: " true)
+    ldapadd -D "cn=admin,$LDAP_Prefix" -w $LDAP_Admin_Pass_Local -H ldap:// -f "mail_user.ldif"
+    [ $? -eq 0 ] && rm mail_user.ldif
+}
+
+# erstellt einen neuen Benutzer in LDAP Datenbank unter ou=Mail,dc=example,dc=com
+# Benutzername und Passwort werden über die Konsole eingegeben
+function createMailUserInteractive {
+    echo "Neuen Mail Benutzer erstellen..."
+    read -p "Benutzername: " mailUsername
+    read -s -p "Passwort: " mailPassword
+    createMailUser "$mailUsername" "$mailPassword"
+}
+
