@@ -674,3 +674,33 @@ function configureDovecot {
 
     systemctl restart dovecot
 }
+
+function installLampStack {
+    checkUpdates
+    sudo apt install apache2 mariadb-server mariadb-client zip unzip php libmagickcore-6.q16-6-extra -y
+
+    sudo apt install php-{apcu,bcmath,cli,common,curl,ldap,gd,gmp,imagick,net-smtp,json,intl,mbstring,mysql,zip,xml,net-smtp,pear,bz2,imap,auth-sasl,mail-mime,net-ldap3,net-sieve,curl} -y
+
+    sudo phpenmod bcmath gmp imagick intl mbstring zip xml
+    sudo chown -R www-data:www-data /var/www/html
+    sudo systemctl enable mariadb
+    sudo mysql_secure_installation    
+
+    read -r -d '' php_ini <<- PHP_INI
+		max_execution_time = 360
+		memory_limit = 512M
+		post_max_size = 200M
+		upload_max_filesize = 200M
+		date.timezone = Europe/Berlin
+		opcache.enable=1
+		opcache.memory_consumption=128
+		opcache.interned_strings_buffer=8
+		opcache.max_accelerated_files=10000
+		opcache.revalidate_freq=1
+		opcache.save_comments=1
+	PHP_INI
+    phpVersion=$(php -v | head -n 1 | cut -d " " -f 2 | cut -d "." -f 1-2)
+    sudo mv "/etc/php/$phpVersion/apache2/php.ini" "/etc/php/$phpVersion/apache2/php.ini.bak"
+    sudo echo "$php_ini" > "/etc/php/$phpVersion/apache2/php.ini"    
+    sudo systemctl restart apache2
+}
