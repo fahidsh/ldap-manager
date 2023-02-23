@@ -177,3 +177,20 @@ function installLDAP {
 function configureLDAP {
     sudo dpkg-reconfigure slapd
 }
+
+# fragt den Benutzer nach ein neuen Passwort mit Bestätigung
+# es muss zwei mal das gleiche Passwort eingegeben werden
+function getMatchingPassword {
+    passwordPrompt="Bitte geben Sie Passwort ein"
+    [ -n "$1" ] && passwordPrompt="$1"
+    while true; do
+        read -s -p "$passwordPrompt: " password
+        echo
+        read -s -p "Bitte Bestätigen Sie das Passwort: " password2
+        [ "$password" = "$password2" ] && break
+        echo
+        echo "Passwörter stimmen nicht überein, versuchen Sie noch einmal."
+    done
+    echo
+    #echo "$password"
+}
