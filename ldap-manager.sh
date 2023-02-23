@@ -675,6 +675,7 @@ function configureDovecot {
     systemctl restart dovecot
 }
 
+# installiert Apache2, PHP und MySQL
 function installLampStack {
     checkUpdates
     sudo apt install apache2 mariadb-server mariadb-client zip unzip php libmagickcore-6.q16-6-extra -y
@@ -703,4 +704,35 @@ function installLampStack {
     sudo mv "/etc/php/$phpVersion/apache2/php.ini" "/etc/php/$phpVersion/apache2/php.ini.bak"
     sudo echo "$php_ini" > "/etc/php/$phpVersion/apache2/php.ini"    
     sudo systemctl restart apache2
+}
+
+# installiert Nextcloud
+function installNextcloud {
+    wget -4 https://download.nextcloud.com/server/installer/setup-nextcloud.php
+    sudo mv setup-nextcloud.php /var/www/html/
+    sudo chown -R www-data:www-data /var/www/html/setup-nextcloud.php
+
+    # nextcloud data ordner nicht im webroot
+    sudo mkdir /home/nextcloud
+    sudo chown -R www-data:www-data /home/nextcloud
+    # erstelle Datenbank und Benutzer für Nextcloud
+    local MYSQL_Root_Pass_Local=$(readConfigOrAsk "MYSQL_Root_Pass" "Bitte geben Sie MYSQL_Root_Pass Passwort ein: " true)
+    local dbObjektName="nextcloud"
+    sudo mysql -uroot -p$MYSQL_Root_Pass_Local -e "CREATE DATABASE $dbObjektName /*\!40100 DEFAULT CHARACTER SET utf8 */;"
+    sudo mysql -uroot -p$MYSQL_Root_Pass_Local -e "CREATE USER $dbObjektName@localhost IDENTIFIED BY '$dbObjektName';"
+    sudo mysql -uroot -p$MYSQL_Root_Pass_Local -e "GRANT ALL PRIVILEGES ON $dbObjektName.* TO '$dbObjektName'@'localhost';"
+    sudo mysql -uroot -p$MYSQL_Root_Pass_Local -e "FLUSH PRIVILEGES;"
+    sudo systemctl restart apache2
+
+    read -r -d '' notice_text <<- NOTICE_TEXT
+		************************************************************************************************
+		bitte besuchen Sie http://$Hostname/setup-nextcloud.php und folgen Sie den Anweisungen um Nextcloud zu installieren.
+		************************************************************************************************
+		Benutzen Sie die folgenden MySQL Datenbank Daten:
+		Datenbank:                  $dbObjektName
+		Datenbank Benutzer:         $dbObjektName
+		Datenbank Passwort:         $dbObjektName
+		Nextcloud Datenordner:      /home/nextcloud
+	NOTICE_TEXT
+    echo "$notice_text"
 }
