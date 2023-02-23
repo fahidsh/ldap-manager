@@ -100,3 +100,25 @@ MYSQL_Root_Pass=$(readConfigValue "MYSQL_Root_Pass")
 isAptUpdate=false
 # Hostname der Maschine (VM/Server)
 Hostname=$(hostname -f)
+
+
+<<COMMENT
+*******************************************
+    Funktionen um bestimmte werte aus der config Datei zu lesen
+*******************************************
+COMMENT
+# liest die zu letzt verwendete UID/GUID aus der config Datei
+# erhöht die UID/GUID um 1 und speichert die neue UID/GUID in der config Datei
+function getNextUid {
+    LDAP_uid=$(readConfigValue "LDAP_uid")
+    # prüfe ob LDAP_uid leer ist
+    # wenn ja, dann setze LDAP_uid auf 20000
+    [ -z "$LDAP_uid" ] && LDAP_uid=20000
+    # erhöhe LDAP_uid um 1
+    local LDAP_uid_local=$(($LDAP_uid + 1))
+    # speichere LDAP_uid in config Datei
+    updateConfigValue "LDAP_uid" $LDAP_uid_local
+    # gebe LDAP_uid zurück
+    echo "$LDAP_uid_local"
+}
+
