@@ -150,7 +150,7 @@ function checkLdapDomain {
 
 <<COMMENT
 *******************************************
-    Funktionen 
+    Weitere Funktionen 
 *******************************************
 COMMENT
 # setzt den Hostname der Maschine (VM/Server)
@@ -166,3 +166,14 @@ function setHostname {
     echo "Hostname ist: $Hostname"
 }
 
+# installiert die LDAP Server
+function installLDAP {
+    checkUpdates
+    sudo apt install slapd ldap-utils -y
+    echo
+}
+
+# starte den LDAP konfigurationswizard
+function configureLDAP {
+    sudo dpkg-reconfigure slapd
+}
