@@ -23,3 +23,14 @@ function readConfigValue() {
 function saveConfigValue() {
     [ -f "$CONFIG_FILE" ] && echo "$1=$2" >> "$CONFIG_FILE" || echo "$1=$2" > "$CONFIG_FILE"
 }
+
+function updateConfigValue() {
+    local key="$1"
+    local value="$2"
+    if [ -f "$CONFIG_FILE" ]; then
+        local val=$(readConfigValue "$key")
+        [ -n "$val" ] && sed -i "s/^$key=.*/$key=$value/" "$CONFIG_FILE" || echo "$key=$value" >> "$CONFIG_FILE"
+    else
+        echo "$key=$value" > "$CONFIG_FILE"
+    fi
+}
