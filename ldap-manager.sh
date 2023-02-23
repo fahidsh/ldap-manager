@@ -295,3 +295,20 @@ function addPostfixSchema {
     ldapadd -D cn=admin,cn=config -w $LDAP_Config_Pass_Local -H ldap:// -f "postfix.ldif"
     [ $? -eq 0 ] && rm postfix.ldif
 }
+
+# erstellt Postfix LDAP Indexe
+function addPostfixIndexes {
+    read -r -d '' postfix_indexes <<- POSTFIX_INDEXES
+		dn: olcDatabase={1}mdb,cn=config
+		objectclass: olcDatabaseConfig
+		objectclass: olcMdbConfig
+		olcdbindex: mailacceptinggeneralid eq,sub
+		olcdbindex: maildrop eq    
+	POSTFIX_INDEXES
+    echo "$postfix_indexes" > postfix_indexes.ldif
+    local LDAP_Config_Pass_Local=$(readConfigOrAsk "LDAP_Config_Pass" "Bitte geben Sie LDAP Config Passwort ein: " true)
+    ldapadd -D cn=admin,cn=config -w $LDAP_Config_Pass_Local -H ldap:// -f postfix_indexes.ldif
+    [ $? -eq 0 ] && rm postfix_indexes.ldif
+}
+
+
