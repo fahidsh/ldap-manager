@@ -750,6 +750,7 @@ function configureDovecot {
 # installiert Apache2, PHP und MySQL
 function installLampStack {
     checkUpdates
+    sudo apt install apache2 mariadb-server mariadb-client zip unzip git php composer libmagickcore-6.q16-6-extra -y
 
     sudo apt install php-{apcu,bcmath,cli,common,curl,ldap,gd,gmp,imagick,net-smtp,json,intl,mbstring,mysql,zip,xml,net-smtp,pear,bz2,imap,auth-sasl,mail-mime,net-ldap3,net-sieve,curl} -y
 
@@ -895,6 +896,14 @@ function setApacheLdapAuth {
     sudo a2ensite ldap-auth.conf
     sudo a2dissite 000-default.conf
     sudo systemctl restart apache2
+
+    read -r -d '' notice_text <<- NOTICE_TEXT
+		************************************************************************************************
+		bitte besuchen Sie ein den folgenden Link um LDAP-Authentication zu testen:
+		$(showWithAllIpAddresses "http://IP_ADDRESS/authenticated")
+		************************************************************************************************
+	NOTICE_TEXT
+    echo "$notice_text"
 }
 
 # LDAP Authentifizierung für Apache deaktivieren
