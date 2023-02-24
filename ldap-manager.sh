@@ -312,6 +312,7 @@ function addPostfixSchema {
 }
 
 # erstellt Postfix LDAP Indexe
+# Depriziert, produzierte Fehler
 function addPostfixIndexesDeprecated {
     read -r -d '' postfix_indexes <<- POSTFIX_INDEXES
 		dn: olcDatabase={1}mdb,cn=config
@@ -326,6 +327,34 @@ function addPostfixIndexesDeprecated {
     local LDAP_Config_Pass_Local=$(readConfigOrAsk "LDAP_Config_Pass" "Bitte geben Sie LDAP Config Passwort ein: " true)
     ldapadd -D cn=admin,cn=config -w $LDAP_Config_Pass_Local -H ldap:// -f postfix_indexes.ldif
     [ $? -eq 0 ] && rm postfix_indexes.ldif
+}
+
+# erstellt Postfix LDAP Indexe
+function addPostfixIndexes {
+    # aktuelle Zeit ermitteln
+    timestamp=$(date +%Y%m%d%H%M%S)
+    # backup ordner festlegen und erstellen
+    backupDir="/var/backup/ldap_backup_idx_$timestamp"
+    sudo mkdir -p "$backupDir"
+    # LDAP Konfiguration in einer Datei sichern
+    sudo slapcat -n 0 -l "$backupDir/config.ldif"
+    sudo slapcat -n 1 -l "$backupDir/data.ldif"
+    newIndexes="olcDbIndex: mailacceptinggeneralid eq,sub\nolcDbIndex: maildrop eq"
+    # neue Indexe in Konfiguration einfügen
+    sudo sed "/olcDbIndex: member,memberUid eq/a $newIndexes" "$backupDir/config.ldif" > "$backupDir/new-config.ldif"
+    # LDAP Dienst stoppen
+    sudo pkill slapd
+    sudo mkdir -p "$backupDir/slapd.d"
+    sudo cp -r /etc/ldap/slapd.d "$backupDir/slapd.d"
+    sudo rm -rf /etc/ldap/slapd.d/*
+    sudo mkdir -p "$backupDir/slapd"
+    sudo cp -r /var/lib/ldap "$backupDir/slapd"
+    sudo rm -rf /var/lib/ldap/*
+    sudo slapadd -n 0 -F /etc/ldap/slapd.d -l "$backupDir/new-config.ldif"
+    sudo slapadd -n 1 -F /etc/ldap/slapd.d -l "$backupDir/data.ldif"
+    sudo chown -R openldap:openldap /etc/ldap/slapd.d
+    sudo chown -R openldap:openldap /var/lib/ldap
+    sudo systemctl start slapd
 }
 
 # erstellt einen neuen Benutzer in LDAP Datenbank mit dem Namen "mailAccountReader"
