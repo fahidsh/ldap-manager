@@ -4,10 +4,11 @@ ScriptVersion="1.0.0"
 ScriptAuthor="Fahid Shehzad"
 ScriptAuthorURL="https://github.com/fahidsh"
 ScriptDate="2020-02-23"
-ScriptLastUpdate="2023-02-23"
+ScriptLastChange="2023-02-24"
 ScriptName="ldap-manager.sh"
 ScriptLicense="MIT"
 ScriptInterfaceLanguage="Deutsch"
+ScriptSupportedOS="Ubuntu 20.04/22.04"
 
 <<COMMENT
 *******************************************
@@ -918,22 +919,36 @@ function showWithAllIpAddresses {
 }
 
 function showAbout {
+    clear
     read -r -d '' about_text <<- ABOUT_TEXT
 		*******************************************
-		************    About    ******************
+		************    Über     ******************
 		*******************************************
+		
 		Skript Name:            $0
 		Skript Version:         $ScriptVersion
 		Skript Author:          $ScriptAuthor ( $ScriptAuthorURL )
 		Skript Lizenz:          $ScriptLicense
-		Oberfläche Sprache:     $ScriptLanguage
+		Oberfläche Sprache:     $ScriptInterfaceLanguage
 		Skript Datum:           $ScriptDate
 		Skript Letzte Änderung: $ScriptLastChange
+		Unterstützte OS:        $ScriptSupportedOS
 		*******************************************
+		
+		Dieser Skript wurde als Lösung für CS Unterricht (Techniker in Informationstechnik) erstellt.
+		Die Aufgabe war einen Mail-Server (Postfix/Dovecot) mit LDAP Authentifizierung zu konfigurieren.
+		Schon in der Anfang war es Klar, dass die Aufgabe eine Weile braucht und man vieles falsch machen kann.
+		Deshalb habe ich beschlossen, die Aufgabe in ein Skript zu packen, damit man es einfach wiederholen kann.
+		Ich muss immernoch die Schwierigkeiten begegnen, aber einmal alles gemacht ist einfacher als immer wieder von vorne anfangen.
+		Das Skript ist nicht perfekt, aber es funktioniert.
+		*******************************************
+		
 		Referenzen:
 		  - https://www.vennedey.net/resources/2-LDAP-managed-mail-server-with-Postfix-and-Dovecot-for-multiple-domains
 		  - https://medium.com/@uri.tau/apache-and-ldap-cc7bff1f629d
 		  - https://stackoverflow.com/
+		  
+		  .
 
 	ABOUT_TEXT
     echo "$about_text"
