@@ -31,6 +31,7 @@ function readConfigValue() {
         echo "$value"
     else
         touch "$CONFIG_FILE"
+        chmod 600 "$CONFIG_FILE"
     fi
 }
 
