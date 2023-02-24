@@ -138,7 +138,7 @@ function getNextUid {
 function checkUpdates {
     if [ "$isAptUpdate" = false ]; then
         sudo apt update
-        #sudo apt upgrade -y
+        sudo apt upgrade -y
         isAptUpdate=true
     fi
 }
