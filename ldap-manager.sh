@@ -750,7 +750,6 @@ function configureDovecot {
 # installiert Apache2, PHP und MySQL
 function installLampStack {
     checkUpdates
-    sudo apt install apache2 mariadb-server mariadb-client zip unzip php composer libmagickcore-6.q16-6-extra -y
 
     sudo apt install php-{apcu,bcmath,cli,common,curl,ldap,gd,gmp,imagick,net-smtp,json,intl,mbstring,mysql,zip,xml,net-smtp,pear,bz2,imap,auth-sasl,mail-mime,net-ldap3,net-sieve,curl} -y
 
