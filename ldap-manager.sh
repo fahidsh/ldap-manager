@@ -462,6 +462,9 @@ function importMailUsersFromCsv {
     fi
 
     while IFS=, read -r username password; do
+        if [[ "$username" == \#* ]]; then
+            continue
+        fi
         createMailUserInternal "$username" "$password"
     done < "$csvFile"
 }
@@ -1122,7 +1125,6 @@ if [ "$EUID" -eq 0 ]; then
             90)
                 echo "Development..."
                 echo "nothing to do..."
-                addPostfixIndexes
                 read -p "$EnterPromptMessage"
                 ;;
             99)
