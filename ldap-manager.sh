@@ -962,7 +962,7 @@ COMMENT
 function displayMenu {
     read -r -d '' menu_text <<- MENU_TEXT
 		-----------------------------------------------------
-		1)  Installiere LDAP, Postfix, Dovecot und Web Server
+		1)  Installiere LDAP, Postfix, Dovecot und Web Server mit all dies das
 		-----------------------------------------------------
 		10) Hostname setzen
 		11) Aktuelle Hostname auslesen
@@ -977,7 +977,9 @@ function displayMenu {
 		26) E-Mail Benutzer von CSV Datei importieren
 		27) Erstelle Beispiel Benutzer Import CSV Datei
 		-----------------------------------------------------
-		41) Postfix installieren und konfigurieren
+		30) LDAP für Postfix konfigurieren
+		-----------------------------------------------------
+		40) Postfix installieren und konfigurieren
 		41) Postfix installieren
 		42) Postfix konfigurieren
 		43) Postfix LDAP-Tabellen testen
@@ -1154,8 +1156,7 @@ if [ "$EUID" -eq 0 ]; then
                 ;;
             68)
                 echo "Apache LDAP Auth Aktiviert"
-                echo "http://$Hostname/authenticated"
-                setApacheLdapAuth
+                setApacheLdapAuth    
                 read -p "$EnterPromptMessage"
                 ;;
             69)
