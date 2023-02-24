@@ -312,13 +312,15 @@ function addPostfixSchema {
 }
 
 # erstellt Postfix LDAP Indexe
-function addPostfixIndexes {
+function addPostfixIndexesDeprecated {
     read -r -d '' postfix_indexes <<- POSTFIX_INDEXES
 		dn: olcDatabase={1}mdb,cn=config
-		objectclass: olcDatabaseConfig
-		objectclass: olcMdbConfig
-		olcdbindex: mailacceptinggeneralid eq,sub
-		olcdbindex: maildrop eq    
+		objectClass: olcDatabaseConfig
+		objectClass: olcMdbConfig
+		olcDatabase: {1}mdb
+		olcDbDirectory: /var/lib/ldap
+		olcDbIndex: mailacceptinggeneralid eq,sub
+		olcDbIndex: maildrop eq    
 	POSTFIX_INDEXES
     echo "$postfix_indexes" > postfix_indexes.ldif
     local LDAP_Config_Pass_Local=$(readConfigOrAsk "LDAP_Config_Pass" "Bitte geben Sie LDAP Config Passwort ein: " true)
@@ -812,27 +814,27 @@ function setApacheLdapAuth {
 
     read -r -d '' apache_ldap_auth_conf <<- APACHE_LDAP_AUTH_CONF
 		<VirtualHost *:80>
-		#ServerName $Hostname
-		ServerAdmin webmaster@localhost
-		DocumentRoot /var/www/html/
-		ErrorLog \${APACHE_LOG_DIR}/error.log
-		CustomLog \${APACHE_LOG_DIR}/access.log combined
-		<Directory /$auth_dir_full>
-		    Options Indexes FollowSymLinks MultiViews
-		    AllowOverride None
-		    Order deny,allow
-		    Deny from All
+		    #ServerName $Hostname
+		    ServerAdmin webmaster@localhost
+		    DocumentRoot /var/www/html/
+		    ErrorLog \${APACHE_LOG_DIR}/error.log
+		    CustomLog \${APACHE_LOG_DIR}/access.log combined
+		    <Directory /$auth_dir_full>
+		        Options Indexes FollowSymLinks MultiViews
+		        AllowOverride None
+		        Order deny,allow
+		        Deny from All
 
-		    AuthType Basic
-		    AuthName "LDAP Authentication"
-		    AuthBasicProvider ldap
-		    AuthBasicAuthoritative Off
-		    AuthLDAPURL "ldap://127.0.0.1:389/ou=Mail,$LDAP_Prefix?uid?sub?(objectClass=*)"
-		    AuthLDAPBindDN "cn=mailAccountReader,ou=Manager,$LDAP_Prefix"
-		    AuthLDAPBindPassword "mar"
-		    Require valid-user
-		    Satisfy any
-		</Directory>
+		        AuthType Basic
+		        AuthName "LDAP Authentication"
+		        AuthBasicProvider ldap
+		        AuthBasicAuthoritative Off
+		        AuthLDAPURL "ldap://127.0.0.1:389/ou=Mail,$LDAP_Prefix?uid?sub?(objectClass=*)"
+		        AuthLDAPBindDN "cn=mailAccountReader,ou=Manager,$LDAP_Prefix"
+		        AuthLDAPBindPassword "mar"
+		        Require valid-user
+		        Satisfy any
+		    </Directory>
 		</VirtualHost>
 	APACHE_LDAP_AUTH_CONF
     sudo echo "$apache_ldap_auth_conf" > /etc/apache2/sites-available/ldap-auth.conf
@@ -909,6 +911,7 @@ function displayMenu {
 		41) Postfix installieren und konfigurieren
 		41) Postfix installieren
 		42) Postfix konfigurieren
+		43) Postfix LDAP-Tabellen testen
 		-----------------------------------------------------
 		50) Dovecot installieren und konfigurieren
 		51) Dovecot installieren
@@ -959,6 +962,7 @@ if [ "$EUID" -eq 0 ]; then
                 installPostfix
                 generatePostfixLdapMaps
                 configurePostfixMainCf
+                testPostfixLdapTables
                 installDovecot
                 configureDovecot
                 installLampStack
@@ -1028,6 +1032,7 @@ if [ "$EUID" -eq 0 ]; then
                 installPostfix
                 generatePostfixLdapMaps
                 configurePostfixMainCf
+                testPostfixLdapTables
                 read -p "$EnterPromptMessage"
                 ;;
             41)
@@ -1037,6 +1042,10 @@ if [ "$EUID" -eq 0 ]; then
             42)
                 generatePostfixLdapMaps
                 configurePostfixMainCf
+                read -p "$EnterPromptMessage"
+                ;;
+            43)
+                testPostfixLdapTables
                 read -p "$EnterPromptMessage"
                 ;;
             50)
@@ -1084,7 +1093,7 @@ if [ "$EUID" -eq 0 ]; then
             90)
                 echo "Development..."
                 echo "nothing to do..."
-                showWithAllIpAddresses "hello-IP_ADDRESSmynameis-IP_ADDRESS"
+                addPostfixIndexes
                 read -p "$EnterPromptMessage"
                 ;;
             99)
