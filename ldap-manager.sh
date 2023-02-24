@@ -465,8 +465,29 @@ function importMailUsersFromCsv {
         if [[ "$username" == \#* ]]; then
             continue
         fi
+        # leerzeichen entfernen (trim)
+        username=$(echo "$username" | xargs)
+        password=$(echo "$password" | xargs)
         createMailUserInternal "$username" "$password"
+        #echo -e "User: $username\nPasswort: $password\n"
     done < "$csvFile"
+}
+
+function createSampleMailUserImportCsv {
+    echo "Erstelle Beispiel CSV Datei für Benutzer Import..."
+    read -r -d '' sample_mail_users_import_csv <<- SAMPLE_MAIL_USERS_IMPORT_CSV
+		# Sample CSV
+		# Format: username,password
+		# Lines starting with # will be ignored, treated as comments
+		# username,password
+		max,0000
+		erika.mustermann,1111
+		john_doe,mypass
+		jane,doe
+	SAMPLE_MAIL_USERS_IMPORT_CSV
+    echo "$sample_mail_users_import_csv" > sample_mail_users_import.csv
+    echo "Sample CSV Datei erstellt: $scriptPath/sample_mail_users_import.csv"
+    
 }
 
 # erstellt eine neue Gruppe in LDAP Datenbank unter ou=Mail,dc=example,dc=com
@@ -939,6 +960,7 @@ function displayMenu {
 		24) Erstelle OU
 		25) Erstelle E-Mail Benutzer
 		26) E-Mail Benutzer von CSV Datei importieren
+		27) Erstelle Beispiel Benutzer Import CSV Datei
 		-----------------------------------------------------
 		41) Postfix installieren und konfigurieren
 		41) Postfix installieren
@@ -1045,6 +1067,10 @@ if [ "$EUID" -eq 0 ]; then
                 ;;
             26)
                 importMailUsersFromCsv
+                read -p "$EnterPromptMessage"
+                ;;
+            27)
+                createSampleMailUserImportCsv
                 read -p "$EnterPromptMessage"
                 ;;
             30)
