@@ -15,9 +15,9 @@ ScriptInterfaceLanguage="Deutsch"
 *******************************************
 COMMENT
 # Pfad des Skripts
-scriptPath=$(dirname "$0")
+SCRIPT_PATH=$(dirname $(readlink -f $0))
 # Pfad der config Datei
-CONFIG_FILE="$scriptPath/config"
+CONFIG_FILE="$SCRIPT_PATH/config"
 
 # Lese den Wert einer Konfigurationsvariable aus der config Datei
 # Parameter: $1 = Name der Konfigurationsvariable
@@ -486,7 +486,7 @@ function createSampleMailUserImportCsv {
 		jane,doe
 	SAMPLE_MAIL_USERS_IMPORT_CSV
     echo "$sample_mail_users_import_csv" > sample_mail_users_import.csv
-    echo "Sample CSV Datei erstellt: $scriptPath/sample_mail_users_import.csv"
+    echo "Sample CSV Datei erstellt: $SCRIPT_PATH/sample_mail_users_import.csv"
     
 }
 
