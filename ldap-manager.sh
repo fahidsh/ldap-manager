@@ -851,8 +851,6 @@ function setApacheLdapAuth {
     auth_dir="authenticated"
     auth_dir_full="/var/www/html/$auth_dir"
     sudo mkdir $auth_dir_full
-    sudo chown -R www-data:www-data $auth_dir_full
-    sudo chmod -R 755 $auth_dir_full
     #sudo a2enmod authnz_ldap proxy_http
     sudo a2enmod authnz_ldap
 
@@ -862,6 +860,9 @@ function setApacheLdapAuth {
 		if (isset(\$_SERVER['PHP_AUTH_USER'])) {
             \$user = \$_SERVER['PHP_AUTH_USER'];
 		    echo "<h2>Welcome Mr. \$user, you are authenticated.</h2>";
+            \$host = \$_SERVER['HTTP_HOST'];
+            \$url = \$_SERVER['REQUEST_URI'];
+            echo "<h3><a href=\"http://log:out@\$host\$url\">Logout</a></h3>";
 		}
 		?>
 	INDEX_PHP_AUTHENTICATE
@@ -874,16 +875,16 @@ function setApacheLdapAuth {
 		    DocumentRoot /var/www/html/
 		    ErrorLog \${APACHE_LOG_DIR}/error.log
 		    CustomLog \${APACHE_LOG_DIR}/access.log combined
-		    <Directory /$auth_dir_full>
+		    <Directory $auth_dir_full>
 		        Options Indexes FollowSymLinks MultiViews
 		        AllowOverride None
 		        Order deny,allow
 		        Deny from All
-
+		        #ErrorDocument 401 /401.php
 		        AuthType Basic
 		        AuthName "LDAP Authentication"
 		        AuthBasicProvider ldap
-		        AuthBasicAuthoritative Off
+		        AuthBasicAuthoritative On
 		        AuthLDAPURL "ldap://127.0.0.1:389/ou=Mail,$LDAP_Prefix?uid?sub?(objectClass=*)"
 		        AuthLDAPBindDN "cn=mailAccountReader,ou=Manager,$LDAP_Prefix"
 		        AuthLDAPBindPassword "mar"
@@ -895,6 +896,8 @@ function setApacheLdapAuth {
     sudo echo "$apache_ldap_auth_conf" > /etc/apache2/sites-available/ldap-auth.conf
     sudo a2ensite ldap-auth.conf
     sudo a2dissite 000-default.conf
+    sudo chown -R www-data:www-data $auth_dir_full
+    sudo chmod -R 755 $auth_dir_full
     sudo systemctl restart apache2
 
     read -r -d '' notice_text <<- NOTICE_TEXT
