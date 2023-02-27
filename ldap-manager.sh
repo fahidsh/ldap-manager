@@ -470,7 +470,7 @@ function importMailUsersFromCsv {
         # leerzeichen entfernen (trim)
         username=$(echo "$username" | xargs)
         password=$(echo "$password" | xargs)
-        createMailUserInternal "$username" "$password"
+        createMailUser "$username" "$password"
         #echo -e "User: $username\nPasswort: $password\n"
     done < "$csvFile"
 }
